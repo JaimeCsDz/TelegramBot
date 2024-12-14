@@ -1,27 +1,20 @@
-# Usa una imagen base de Ruby
-FROM ruby:3.0.2
+# Usa una imagen base de Node.js
+FROM node:18
 
-# Instala dependencias
-RUN apt-get update -qq && apt-get install -y nodejs postgresql-client
+# Establece el directorio de trabajo dentro del contenedor
+WORKDIR /usr/src/app
 
-# Configura el directorio de trabajo
-WORKDIR /myapp
+# Copia el package.json y el package-lock.json al directorio de trabajo
+COPY package*.json ./
 
-# Copia el Gemfile y Gemfile.lock
-COPY Gemfile /myapp/Gemfile
-COPY Gemfile.lock /myapp/Gemfile.lock
+# Instala las dependencias
+RUN npm install --production
 
-# Instala las gemas
-RUN bundle install
+# Copia el resto del código de tu aplicación al contenedor
+COPY . .
 
-# Copia el resto del código de la aplicación
-COPY . /myapp
+# Expone el puerto (opcional, si tu bot utiliza algún servidor HTTP)
+# EXPOSE 3000
 
-# Precompila los assets
-RUN bundle exec rake assets:precompile
-
-# Expone el puerto que usará la aplicación
-EXPOSE 3000
-
-# Comando para iniciar el servidor
-CMD ["rails", "server", "-b", "0.0.0.0"]
+# Comando para iniciar tu bot de Telegram
+CMD ["node", "bot.js"]
