@@ -1,0 +1,10 @@
+{
+    "cancelar una venta": {
+        "descripcion": "Para cancelar una venta, sigue estos pasos:\n 1) Abre el sistema.\n 2) Selecciona la venta.\n 3) Haz clic en 'Cancelar'.",
+        "pdf": "https://drive.google.com/file/d/1ChqRAlpklsEAMi-42RxKa1LwCF2C5c6u/view?usp=sharing"
+    },
+    "abrir venta": {
+        "descripcion": "Para abrir una nueva venta, sigue estos pasos: 1) Inicia sesión. 2) Ve a 'Ventas'. 3) Haz clic en 'Nueva venta'.",
+        "pdf": "https://drive.google.com/uc?export=download&id=2EFGH67890LMN"
+    }
+}
