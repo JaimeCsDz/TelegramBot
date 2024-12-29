@@ -1,0 +1,5 @@
+{
+    "Apertura de jornada":{
+        "descripcion": "Para realizar la apertura de jornada sigue estos pasos 📝 \n\n 1. Abrir la aplicación POS Station (menú de inicio o escritorio) 🖥️\n 2️. Se despliega una ventana de Login, verificar lo siguiente 📰\n        -Nombre de la empresa y sucursal 🏢\n        -Estación, en jornada debe contener *No Shift Open*⚠️\n        -La fecha debe ser del dia. 📅\n 3️. Ingresar el usuario, contraseña y presionar OK 🔐\n 4️. El sistema preguntara si se desea abrir un turno 🤔\n        -Ingresa el importe en valor de acciones(fondo fijo) y presionar ok 🛒"
+    }
+}
