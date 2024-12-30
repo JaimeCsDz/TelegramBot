@@ -1,7 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 const natural = require('natural');
-
 require('dotenv').config();
 
 // Configuración del bot
@@ -24,6 +23,12 @@ const categorias = {
     descripcion: 'Opciones relacionadas con ventas.',
     guias: guiasVentas
   },
+  cancelaciones: {
+    descripcion: 'Opciones relacionadas con cancelaciones.',	
+  },
+  'Cambios fisicos':{
+    descripcion: 'Opciones relacionadas con cambios fisicos.',
+  }
 };
 
 // Estado temporal para manejar la categoría seleccionada por cada usuario
@@ -32,23 +37,7 @@ const userState = {};
 // Enviar mensaje de bienvenida cuando el usuario envía el comando /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-
-  const welcomeMessage = `¡Hola, soy un asistente virtual!🤖 Pulsa sobre el botón "Comenzar" para ver las opciones disponibles 📝 o ingresa palabras clave para una búsqueda específica 🔍. ¡Estoy aquí para ayudarte!😊`;
-
-  const options = {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: 'Comenzar', // Texto del botón
-            callback_data: 'comenzar' // Acción del botón
-          }
-        ]
-      ]
-    }
-  };
-
-  bot.sendMessage(chatId, welcomeMessage, options);
+  mostrarMensajeBienvenida(chatId);
 });
 
 // Manejar el callback del botón "Comenzar"
@@ -82,6 +71,13 @@ bot.on('message', (msg) => {
     return;
   }
 
+  // Manejar saludos genéricos
+  const saludosGenericos = ['hola', 'buenos días', 'buenas tardes', 'buenas noches'];
+  if (saludosGenericos.includes(userMessage)) {
+    mostrarMensajeBienvenida(chatId);
+    return;
+  }
+
   // Obtener estado del usuario
   const estado = userState[chatId];
 
@@ -90,32 +86,31 @@ bot.on('message', (msg) => {
     const categoriaSeleccionada = estado.seleccion;
     const guias = categorias[categoriaSeleccionada].guias;
 
-    let opcionSeleccionada = null;
+    // Buscar por similitud dentro del submenú
+    let guiaSeleccionada = null;
 
     // Validar si el usuario ingresó un número
     if (/^\d+$/.test(userMessage)) {
       const opcionIndex = parseInt(userMessage) - 1;
-      const clavesGuias = Object.keys(guias);
-      if (opcionIndex >= 0 && opcionIndex < clavesGuias.length) {
-        opcionSeleccionada = clavesGuias[opcionIndex];
+      const opciones = Object.keys(guias);
+      if (opcionIndex >= 0 && opcionIndex < opciones.length) {
+        guiaSeleccionada = guias[opciones[opcionIndex]];
       }
     }
 
-    // Validar si el usuario ingresó el nombre exacto de la opción
-    if (!opcionSeleccionada && guias[userMessage]) {
-      opcionSeleccionada = userMessage;
+    // Validar si el usuario ingresó el nombre de la opción
+    if (!guiaSeleccionada) {
+      guiaSeleccionada = buscarEnGuias(guias, userMessage);
     }
 
-    if (opcionSeleccionada) {
-      const guiaSeleccionada = guias[opcionSeleccionada];
-      let mensajeRespuesta = `${guiaSeleccionada.descripcion}`;
+    if (guiaSeleccionada) {
+      let respuesta = `${guiaSeleccionada.descripcion}`;
       if (guiaSeleccionada.pdf) {
-        mensajeRespuesta += `\n\nConsulta el PDF: ${guiaSeleccionada.pdf}`;
+      respuesta += `\n\nConsulta el PDF: ${guiaSeleccionada.pdf}`;
       }
+      bot.sendMessage(chatId, respuesta, { parse_mode: 'Markdown' });	
 
-      bot.sendMessage(chatId, mensajeRespuesta,  { parse_mode: 'Markdown' });
-
-      // Reiniciar el estado del usuario y mostrar el mensaje de bienvenida
+      // Reiniciar el estado del usuario
       delete userState[chatId];
       mostrarMensajeBienvenida(chatId);
     } else {
@@ -139,7 +134,7 @@ bot.on('message', (msg) => {
     }
 
     // Validar si el usuario ingresó el nombre de la categoría
-    if (!categoriaSeleccionada && categorias[userMessage]) {
+    if (!categoriaSeleccionada && categoriasKeys.includes(userMessage)) {
       categoriaSeleccionada = userMessage;
     }
 
@@ -161,14 +156,15 @@ bot.on('message', (msg) => {
     return;
   }
 
-  // Si el usuario envía algo que no es categoría ni opción, buscar por palabras clave
-  const claveGuia = buscarEnTodasLasGuias(userMessage);
-  if (claveGuia) {
-    const respuesta = claveGuia;
-    bot.sendMessage(
-      chatId,
-      `${respuesta.descripcion}\n\nConsulta el PDF: ${respuesta.pdf}`
-    );
+  // Si el usuario envía algo que no es categoría ni opción, buscar en todas las guías
+  const guiaEncontrada = buscarEnTodasLasGuias(userMessage);
+  if (guiaEncontrada) {
+    const respuesta = guiaEncontrada;
+    let respuestaMensaje = `${respuesta.descripcion}`;
+    if (respuesta.pdf) {
+      respuestaMensaje += `\n\nConsulta el PDF: ${respuesta.pdf}`;
+    }
+    bot.sendMessage(chatId, respuestaMensaje, { parse_mode: 'Markdown' });
   } else {
     bot.sendMessage(chatId, 'No encontré información relacionada. Intenta con otra pregunta o selección.');
   }
@@ -196,17 +192,19 @@ function mostrarMensajeBienvenida(chatId) {
 
 // Función para buscar en todas las guías
 function buscarEnTodasLasGuias(mensaje) {
+  return buscarEnGuias(Object.assign({}, ...Object.values(categorias).map(c => c.guias)), mensaje);
+}
+
+// Función para buscar en guías de una categoría específica
+function buscarEnGuias(guias, mensaje) {
   const mensajeLower = mensaje.toLowerCase();
-  const threshold = 0.4; // Ajusta el umbral de similitud según lo necesites
+  const threshold = 0.6; // Ajusta el umbral de similitud según lo necesites
   let mejoresCoincidencias = [];
 
-  for (const categoria in categorias) {
-    const guias = categorias[categoria].guias;
-    for (const clave in guias) {
-      const similitud = natural.JaroWinklerDistance(mensajeLower, clave.toLowerCase());
-      if (similitud >= threshold) {
-        mejoresCoincidencias.push({ guia: guias[clave], similitud });
-      }
+  for (const clave in guias) {
+    const similitud = natural.JaroWinklerDistance(mensajeLower, clave.toLowerCase());
+    if (similitud >= threshold) {
+      mejoresCoincidencias.push({ guia: guias[clave], similitud });
     }
   }
 
