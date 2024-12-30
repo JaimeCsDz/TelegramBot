@@ -24,9 +24,9 @@ const categorias = {
     guias: guiasVentas
   },
   cancelaciones: {
-    descripcion: 'Opciones relacionadas con cancelaciones.',	
+    descripcion: 'Opciones relacionadas con cancelaciones.',
   },
-  'Cambios fisicos':{
+  'Cambios fisicos': {
     descripcion: 'Opciones relacionadas con cambios fisicos.',
   }
 };
@@ -106,13 +106,15 @@ bot.on('message', (msg) => {
     if (guiaSeleccionada) {
       let respuesta = `${guiaSeleccionada.descripcion}`;
       if (guiaSeleccionada.pdf) {
-      respuesta += `\n\nConsulta el PDF: ${guiaSeleccionada.pdf}`;
+        respuesta += `\n\nConsulta el PDF: ${guiaSeleccionada.pdf}`;
       }
-      bot.sendMessage(chatId, respuesta, { parse_mode: 'Markdown' });	
+      bot.sendMessage(chatId, respuesta, { parse_mode: 'Markdown' });
+
+      // Mostrar las opciones de continuar o finalizar después de mostrar la guía
+      mostrarOpcionesContinuar(chatId);
 
       // Reiniciar el estado del usuario
       delete userState[chatId];
-      mostrarMensajeBienvenida(chatId);
     } else {
       bot.sendMessage(chatId, 'Opción no válida ⚠️. Por favor, ingresa el número o el nombre correcto de la opción 🙄.');
     }
@@ -165,6 +167,9 @@ bot.on('message', (msg) => {
       respuestaMensaje += `\n\nConsulta el PDF: ${respuesta.pdf}`;
     }
     bot.sendMessage(chatId, respuestaMensaje, { parse_mode: 'Markdown' });
+
+    // Mostrar las opciones de continuar o finalizar
+    mostrarOpcionesContinuar(chatId);
   } else {
     bot.sendMessage(chatId, 'No encontré información relacionada. Intenta con otra pregunta o selección.');
   }
@@ -214,3 +219,55 @@ function buscarEnGuias(guias, mensaje) {
   // Devolver la guía con la similitud más alta si existe
   return mejoresCoincidencias.length > 0 ? mejoresCoincidencias[0].guia : null;
 }
+
+// Función para mostrar opciones de continuar o finalizar
+function mostrarOpcionesContinuar(chatId) {
+  const options = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Buscar otra guía',
+            callback_data: 'buscar_otra'
+          },
+          {
+            text: 'Finalizar',
+            callback_data: 'finalizar'
+          }
+        ]
+      ]
+    }
+  };
+
+  bot.sendMessage(chatId, '¿Deseas realizar otra búsqueda o finalizar?', options);
+}
+
+// Manejar el callback de buscar otra guía o finalizar
+bot.on('callback_query', (callbackQuery) => {
+  const chatId = callbackQuery.message.chat.id;
+  const callbackData = callbackQuery.data;
+
+  if (callbackData === 'buscar_otra') {
+    if (userState[chatId] && userState[chatId].finalizado) {
+      bot.sendMessage(chatId, 'Ya has finalizado la consulta. Escribe "hola" para poder acceder a las categorias.', { reply_markup: { remove_keyboard: true } });
+      return;
+    }
+
+    const categoriasKeys = Object.keys(categorias);
+    const opcionesCategorias = categoriasKeys
+      .map((key, index) => `${index + 1}. ${key.charAt(0).toUpperCase() + key.slice(1)}`)
+      .join('\n');
+
+    bot.sendMessage(
+      chatId,
+      `Estas son las categorías principales disponibles:📋\n\n${opcionesCategorias}\n\nEscribe el número o el nombre de la categoría para ver las opciones dentro de ella.🤓`
+    );
+
+    // Guardar las claves para validar la selección por número
+    userState[chatId] = { categoriasKeys };
+  } else if (callbackData === 'finalizar') {
+    // Marcar que el usuario ha finalizado
+    userState[chatId] = { finalizado: true };
+    bot.sendMessage(chatId, 'Gracias por usar el asistente virtual. Si deseas retomar el flujo, envía "hola". ¡Hasta luego! 😊', { reply_markup: { remove_keyboard: true } });
+  }
+});
