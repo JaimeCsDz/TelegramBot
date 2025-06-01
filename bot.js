@@ -2,13 +2,6 @@ const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 const natural = require('natural');
 require('dotenv').config();
-const express = require('express');
-const app = express();
-const path = require('path');
-
-// Sirve archivos desde la carpeta 'public'
-app.use('/public', express.static(path.join(__dirname, 'public')));
-
 
 // Configuración del bot
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;

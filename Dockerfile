@@ -17,4 +17,4 @@ COPY . .
 # EXPOSE 3000
 
 # Comando para iniciar tu bot de Telegram
-CMD ["node", "bot.js"]
+CMD ["node", "server.js"]
