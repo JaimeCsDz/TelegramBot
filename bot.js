@@ -29,7 +29,7 @@ const categorias = {
     descripcion: 'Opciones relacionadas con cancelaciones.',
     guias: guiasCancelacion
   },
-  'Guía de reconciliación': {
+  'Guia de reconciliacion': {
     descripcion: 'Opciones relacionadas con cambios fisicos.',
     guias: guiasReconciliacion
   }
@@ -89,12 +89,12 @@ bot.on('message', (msg) => {
   if (estado && estado.seleccion && categorias[estado.seleccion]) {
     const categoriaSeleccionada = estado.seleccion;
     const categoria = categorias[categoriaSeleccionada];
-  
+
     if (!categoria.guias) {
       bot.sendMessage(chatId, 'No se encontraron guías para esta categoría.');
       return;
     }
-  
+    
     const guias = categoria.guias;
     let guiaSeleccionada = null;
   
