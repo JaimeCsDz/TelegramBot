@@ -15,6 +15,7 @@ const guiasVentas = JSON.parse(fs.readFileSync('guia_ventas.json', 'utf8'));
 const guiasApertura = JSON.parse(fs.readFileSync('guiaApertura.json', 'utf8'));
 const guiasCancelacion = JSON.parse(fs.readFileSync('guiaCancelaciones.json', 'utf8'));
 const guiasReconciliacion = JSON.parse(fs.readFileSync('guiaReconciliacion.json', 'utf8'));
+const comentariosPendientes = {};
 
 const categorias = {
   'Jornada': {
@@ -69,6 +70,24 @@ bot.on('callback_query', (callbackQuery) => {
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const userMessage = msg.text ? msg.text.toLowerCase() : '';
+
+  if (msg.chat.type !== 'private' && !comentariosPendientes[msg.chat.id]) {
+    return;
+  }
+  if (comentariosPendientes[chatId] && msg.text && !msg.text.startsWith('/')) {
+    const comentario = msg.text;
+    delete comentariosPendientes[chatId]; // salir del modo comentario
+
+    const ADMIN_CHAT_ID = process.env.CHAT_ID;
+    const nombre = `${msg.from.first_name || ''} ${msg.from.last_name || ''}`.trim();
+
+    const mensaje = `🗣 *Nuevo comentario del usuario*\n\n👤 ${nombre}\n🆔 ID: ${chatId}\n\n💬 ${comentario}`;
+
+    bot.sendMessage(ADMIN_CHAT_ID, mensaje, { parse_mode: 'Markdown' });
+    bot.sendMessage(chatId, '✅ ¡Gracias! Tu comentario ha sido enviado.');
+
+    return;
+  }
 
   // Ignorar comandos como /start
   if (userMessage.startsWith('/')) {
@@ -246,6 +265,12 @@ function mostrarOpcionesContinuar(chatId) {
             text: 'Finalizar',
             callback_data: 'finalizar'
           }
+        ],
+        [
+          {
+            text: "Agregar un comentario",
+            callback_data: 'agregar_comentario'
+          }
         ]
       ]
     }
@@ -281,5 +306,8 @@ bot.on('callback_query', (callbackQuery) => {
     // Marcar que el usuario ha finalizado
     userState[chatId] = { finalizado: true };
     bot.sendMessage(chatId, 'Gracias por usar el asistente virtual. Si deseas retomar el flujo, envía "hola". ¡Hasta luego! 😊', { reply_markup: { remove_keyboard: true } });
+  }else if (callbackData === 'agregar_comentario') {
+    comentariosPendientes[chatId] = true; 
+    bot.sendMessage(chatId, '📝 Por favor, escribe tu comentario:');
   }
 });
