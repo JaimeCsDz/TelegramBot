@@ -86,14 +86,19 @@ bot.on('message', (msg) => {
   const estado = userState[chatId];
 
   // Si el usuario está en un estado de selección de categoría
-  if (estado && estado.seleccion) {
+  if (estado && estado.seleccion && categorias[estado.seleccion]) {
     const categoriaSeleccionada = estado.seleccion;
-    const guias = categorias[categoriaSeleccionada].guias;
-
-    // Buscar por similitud dentro del submenú
+    const categoria = categorias[categoriaSeleccionada];
+  
+    if (!categoria.guias) {
+      bot.sendMessage(chatId, 'No se encontraron guías para esta categoría.');
+      return;
+    }
+  
+    const guias = categoria.guias;
     let guiaSeleccionada = null;
-
-    // Validar si el usuario ingresó un número
+  
+    // Buscar por número
     if (/^\d+$/.test(userMessage)) {
       const opcionIndex = parseInt(userMessage) - 1;
       const opciones = Object.keys(guias);
@@ -101,29 +106,32 @@ bot.on('message', (msg) => {
         guiaSeleccionada = guias[opciones[opcionIndex]];
       }
     }
-
-    // Validar si el usuario ingresó el nombre de la opción
+  
+    // Buscar por texto
     if (!guiaSeleccionada) {
       guiaSeleccionada = buscarEnGuias(guias, userMessage);
     }
-
+  
     if (guiaSeleccionada) {
-      let respuesta = `${guiaSeleccionada.descripcion}`;
+      let respuesta = guiaSeleccionada.descripcion;
       if (guiaSeleccionada.pdf) {
         respuesta += `\n\nConsulta el PDF: ${guiaSeleccionada.pdf}`;
       }
-      bot.sendMessage(chatId, respuesta, { parse_mode: 'Markdown' });
-
-      // Mostrar las opciones de continuar o finalizar después de mostrar la guía
+  
+      bot.sendMessage(chatId, respuesta, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+  
       mostrarOpcionesContinuar(chatId);
-
-      // Reiniciar el estado del usuario
       delete userState[chatId];
     } else {
       bot.sendMessage(chatId, 'Opción no válida ⚠️. Por favor, ingresa el número o el nombre correcto de la opción 🙄.');
     }
+  
     return;
   }
+  
 
   // Si el usuario selecciona una categoría principal
   if (estado && estado.categoriasKeys) {
