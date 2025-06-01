@@ -13,21 +13,25 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 // Cargar las guías desde los archivos JSON
 const guiasVentas = JSON.parse(fs.readFileSync('guia_ventas.json', 'utf8'));
 const guiasApertura = JSON.parse(fs.readFileSync('guiaApertura.json', 'utf8'));
+const guiasCancelacion = JSON.parse(fs.readFileSync('guiaCancelaciones.json', 'utf8'));
+const guiasReconciliacion = JSON.parse(fs.readFileSync('guiaReconciliacion.json', 'utf8'));
 
 const categorias = {
-  'abrir jornada': {
+  'Jornada': {
     descripcion: 'Opciones relacionadas con la apertura de jornada.',
     guias: guiasApertura
   },
-  ventas: {
+  Ventas: {
     descripcion: 'Opciones relacionadas con ventas.',
     guias: guiasVentas
   },
-  cancelaciones: {
+  Cancelaciones: {
     descripcion: 'Opciones relacionadas con cancelaciones.',
+    guias: guiasCancelacion
   },
-  'Cambios fisicos': {
+  'Guía de reconciliación': {
     descripcion: 'Opciones relacionadas con cambios fisicos.',
+    guias: guiasReconciliacion
   }
 };
 
